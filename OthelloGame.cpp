@@ -58,12 +58,7 @@ bool InBounds(int row, int col)
 
 bool IsValidMove(const OthelloMatrix &board, int row, int col)
 {
-	if (row != -1 && col != -1);
-	{
-		return (InBounds(row, col) && board.at(row).at(col) == 0);
-	}
-
-	return true;
+	return (row==-1&&col==-1)? true : (InBounds(row, col) && board.at(row).at(col) == 0);
 }
 
 void GetMove(int &row, int &col)
@@ -72,71 +67,56 @@ void GetMove(int &row, int &col)
 	cin.ignore(256, ',') >> col;
 }
 
-//TODO make this flip surrounded pieces.
 void ApplyMove(OthelloMatrix &board, int row, int col, char currentPlayer)
 {
-	array<int, 2> direction{ {0,1} };
+	array<int, 2> dir{ {1,1} };
 	array<int, 2> initial{ {row,col} };
-	int counter;
-
-	for (int x = 0; x < 8; x++)
-	{
-		row = initial.at(0);
-		col = initial.at(1);
-		counter = 0;
-
-		//It changes direction clockwise every 2 increments.
-		if (x / 2 == 1)
-		{
-			direction = { -1, 0 };
-		}
-		else if (x / 2 == 2)
-		{
-			direction = { 0, -1 };
-		}
-		else if (x / 2 == 3)
-		{
-			direction = { 1, 0 };
-		}
-
-		do //We save a few calls by looping here.
-		{
-			bool isFlipped = false;
-			
-			//This checks for in bounds and whether the next tile is enemy.
-			while (InBounds(row+direction.at(0),col+direction.at(1)) && board.at(row + direction.at(0)).at(col + direction.at(1)) == -1 * currentPlayer)
-			{
-				if (isFlipped)
-				{
-					counter--;
-				}
-				else
-				{
-					counter++;
-				}
-
-				row += direction.at(0);
-				col += direction.at(1);
-			}
-
-			if (!InBounds(row, col) || board.at(row).at(col) == 0)
-			{
-				break;
-			}
-
-			isFlipped = true;
-
-			direction.at(0) *= -1;
-			direction.at(1) *= -1;
-
-			//We need to decrement here or we get an infinite loop.
-			counter--;
-
-		} while (counter > 0);
-	}
-
 
 	board.at(row).at(col) = currentPlayer;
+
+	//One loop for each direction.
+	for (int x = 0; x < 8; x++)
+	{
+
+		row = initial.at(0);
+		col = initial.at(1);
+
+		char outOrIn = 1;
+
+		//It changes direction clockwise every increment.
+		if ( ((x / 2) % 2) == 0)
+		{
+			dir.at(1) += (x/2==0) ? -1 : 1;
+		}
+		else
+		{
+			dir.at(0) += (x/2==1) ? -1 : 1;
+		}
+
+		//We need to protect the first board check but don't have enough calls to change row/col first or the space to check at the beginning.
+		if (InBounds(row + dir.at(0), col + dir.at(1)))
+		{
+			do //We save a few calls by looping here.
+			{
+				//This checks for in bounds and whether the next tile is enemy.
+				do
+				{
+					board.at(row).at(col) *= (board.at(row).at(col)==currentPlayer) ? 1 : outOrIn;
+
+					row += dir.at(0);
+					col += dir.at(1);
+
+				} while (InBounds(row, col) && board.at(row).at(col) == -1 * currentPlayer);
+
+				outOrIn *= -1;
+
+				dir.at(0) *= (InBounds(row, col) && board.at(row).at(col) == currentPlayer) ? -1 : 1;
+				dir.at(1) *= (InBounds(row, col) && board.at(row).at(col) == currentPlayer) ? -1 : 1;
+
+			} while (InBounds(row, col) && board.at(row).at(col) == currentPlayer&&outOrIn==-1);
+		}
+	}
+
 }
 
 int GetValue(const OthelloMatrix &board)
